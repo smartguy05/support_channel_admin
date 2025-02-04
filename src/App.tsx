@@ -1,24 +1,22 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import FileUploadPage from "./componets/FileUploadPage";
+import {HomePage} from "./componets/Home";
+import ApiAdminPage from "./componets/ApiAdmin";
+import KbAdminPage from "./componets/KbAdmin";
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/admin/channel" element={<ApiAdminPage />} />
+          <Route path="/admin/kb" element={<KbAdminPage />} />
+          <Route path="/documents/upload" element={<FileUploadPage />} />
+        </Routes>
+      </Router>
     </div>
   );
 }
