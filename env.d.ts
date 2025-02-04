@@ -1,8 +1,8 @@
 ﻿
 declare namespace NodeJS {
     interface ProcessEnv {
-        PORT: string;
-        SUPPORT_CHANNEL_API_URL: string;
-        SUPPORT_CHANNEL_API_KB: string;
+        REACT_APP_PORT: string;
+        REACT_APP_SUPPORT_CHANNEL_API_URL: string;
+        REACT_APP_SUPPORT_CHANNEL_KB_URL: string;
     }
 }

@@ -1,0 +1,86 @@
+/* CollectionAdminPage.css */
+
+.collection-admin {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.collection-admin h2 {
+    color: #333;
+}
+
+.collection-admin .collection-controls {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.collection-admin .collection-controls label {
+    margin-right: 10px;
+}
+
+.collection-admin .collection-controls select {
+    margin-left: 10px;
+    padding: 5px;
+}
+
+.collection-admin .collection-controls button {
+    margin-left: 10px;
+    padding: 5px 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.collection-admin .documents-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.collection-admin .documents-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.collection-admin .documents-list li button {
+    background-color: #f44336;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.collection-admin .upload-area {
+    border: 2px dashed #aaa;
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.collection-admin .upload-area.drag-active {
+    background-color: #f0f8ff;
+}
+
+.collection-admin .error-message {
+    color: red;
+}
+
+.collection-admin .success-message {
+    color: green;
+}
+
+ul.documents-list {
+    list-style-type: none;
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    
+    li {
+        display: flex;
+        justify-content: center;
+        gap: 3vw;
+    }
+}

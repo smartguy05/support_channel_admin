@@ -1,24 +1,22 @@
 import React from 'react';
 import './App.css';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import FileUploadPage from "./componets/FileUploadPage";
-import {HomePage} from "./componets/Home";
-import ApiAdminPage from "./componets/ApiAdmin";
-import KbAdminPage from "./componets/KbAdmin";
+import { Route, Routes } from 'react-router-dom';
+import CollectionAdminPage from "./componets/CollectionAdminPage";
+import ChannelAdminPage from "./componets/ChannelAdmin";
+import Navbar from "./componets/Navbar";
+import HomePage from "./componets/HomePage";
 
 function App() {
-  return (
-    <div className="App">
-      <Router>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/admin/channel" element={<ApiAdminPage />} />
-          <Route path="/admin/kb" element={<KbAdminPage />} />
-          <Route path="/documents/upload" element={<FileUploadPage />} />
-        </Routes>
-      </Router>
-    </div>
-  );
+	return (
+		<div className="App">
+			<Navbar />
+			<Routes>
+				<Route path="/" element={<HomePage />} />
+				<Route path="/channels" element={<ChannelAdminPage />} />
+				<Route path="/collections" element={<CollectionAdminPage />} />
+			</Routes>
+		</div>
+	);
 }
 
 export default App;

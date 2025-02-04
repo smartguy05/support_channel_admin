@@ -1,44 +1,80 @@
 ﻿import React, { useState, useEffect } from 'react';
 
-const ApiAdminPage = () => {
+const ChannelAdminPage = () => {
     // Holds the list of admin chat settings
     const [settings, setSettings] = useState([]);
     // Holds form values for creating a new chat setting
     const [formData, setFormData] = useState({
+        name: '',
         model: '',
         max_tokens: 150,
         temperature: 0.7,
         max_context_length: 4000,
-        kbs: '',
-        name: ''
+        system_prompt: '',
+        kbs: [] // This will be an array of objects: { api_key: '', collection: '' }
     });
     const [error, setError] = useState('');
 
     // Load admin settings from the API on component mount
     useEffect(() => {
-        fetch('/admin')
+        fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin`)
             .then(response => response.json())
             .then(data => setSettings(data))
             .catch(err => setError(err.message));
     }, []);
 
-    // Handle form input changes
+    // Handle form input changes for top-level fields
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Add a new KB Channel entry
+    const addKBCollection = () => {
+        setFormData(prev => ({
+            ...prev,
+            kbs: [...prev.kbs, { api_key: '', collection: '' }]
+        }));
+    };
+
+    // Remove a KB Channel entry at a given index
+    const removeKBChannel = (index) => {
+        setFormData(prev => {
+            const newKbs = [...prev.kbs];
+            newKbs.splice(index, 1);
+            return { ...prev, kbs: newKbs };
+        });
+    };
+
+    // Update a field in a specific KB Channel entry
+    const updateKBChannel = (index, field, value) => {
+        setFormData(prev => {
+            const newKbs = prev.kbs.map((kb, idx) => {
+                if (idx === index) {
+                    return { ...kb, [field]: value };
+                }
+                return kb;
+            });
+            return { ...prev, kbs: newKbs };
+        });
     };
 
     // Submit new chat setting to the API
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Convert comma-separated kbs into an array
+        // Prepare payload with proper types and structure.
         const payload = {
-            ...formData,
-            kbs: formData.kbs.split(',').map(item => item.trim()).filter(item => item !== '')
+            name: formData.name,
+            model: formData.model,
+            max_tokens: Number(formData.max_tokens),
+            temperature: Number(formData.temperature),
+            max_context_length: Number(formData.max_context_length),
+            system_prompt: formData.system_prompt,
+            kbs: formData.kbs // Each object should have the properties: api_key and collection
         };
 
-        fetch('/admin', {
+        fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -54,20 +90,24 @@ const ApiAdminPage = () => {
                 setSettings(prev => [...prev, newSetting]);
                 // Reset form fields
                 setFormData({
+                    name: '',
                     model: '',
+                    system_prompt: '',
                     max_tokens: 150,
                     temperature: 0.7,
                     max_context_length: 4000,
-                    kbs: '',
-                    name: ''
+                    kbs: []
                 });
             })
             .catch(err => setError(err.message));
     };
 
-    // Delete a chat setting by its UUID
+    // Delete a chat setting by its UUID with confirmation
     const handleDelete = (uuid) => {
-        fetch(`/admin/${uuid}`, { method: 'DELETE' })
+        const confirmDelete = window.confirm('Are you sure you want to delete this setting?');
+        if (!confirmDelete) return;
+
+        fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin/${uuid}`, { method: 'DELETE' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to delete setting');
@@ -80,17 +120,16 @@ const ApiAdminPage = () => {
 
     return (
         <div className="admin-page" style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-            <h1>Admin Chat Settings</h1>
+            <h1>Channel Settings</h1>
             {error && <p style={{ color: 'red' }}>{error}</p>}
 
             {/* List of existing settings */}
             <section>
-                <h2>Existing Settings</h2>
                 {settings.length === 0 ? (
                     <p>No chat settings available.</p>
                 ) : (
                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {settings.map(setting => (
+                        {settings.filter(f => !!f.uuid).map(setting => (
                             <li key={setting.uuid} style={{ border: '1px solid #ccc', marginBottom: '10px', padding: '10px' }}>
                                 <p><strong>Name:</strong> {setting.name}</p>
                                 <p><strong>Model:</strong> {setting.model}</p>
@@ -99,7 +138,11 @@ const ApiAdminPage = () => {
                                 <p><strong>Max Context Length:</strong> {setting.max_context_length}</p>
                                 <p>
                                     <strong>Kbs:</strong>{' '}
-                                    {Array.isArray(setting.kbs) ? setting.kbs.join(', ') : ''}
+                                    {Array.isArray(setting.kbs)
+                                        ? setting.kbs
+                                            .map(kb => `Collection: ${kb.collection}, API Key: ${kb.api_key}`)
+                                            .join(' | ')
+                                        : ''}
                                 </p>
                                 <button onClick={() => handleDelete(setting.uuid)} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}>
                                     Delete
@@ -112,7 +155,7 @@ const ApiAdminPage = () => {
 
             {/* Form for adding a new chat setting */}
             <section style={{ marginTop: '30px' }}>
-                <h2>Add New Chat Setting</h2>
+                <h2>Add New Channel</h2>
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '10px' }}>
                         <label>
@@ -134,6 +177,18 @@ const ApiAdminPage = () => {
                                 type="text"
                                 name="model"
                                 value={formData.model}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: '300px' }}
+                            />
+                        </label>
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                        <label>
+                            System Prompt: <br />
+                            <textarea
+                                name="system_prompt"
+                                value={formData.system_prompt}
                                 onChange={handleInputChange}
                                 required
                                 style={{ width: '300px' }}
@@ -180,24 +235,51 @@ const ApiAdminPage = () => {
                             />
                         </label>
                     </div>
+
+                    {/* KB Collections Section */}
                     <div style={{ marginBottom: '10px' }}>
-                        <label>
-                            Kbs (comma separated): <br />
-                            <input
-                                type="text"
-                                name="kbs"
-                                value={formData.kbs}
-                                onChange={handleInputChange}
-                                placeholder="kb1,kb2,kb3"
-                                style={{ width: '300px' }}
-                            />
-                        </label>
+                        <h3>KB Collections</h3>
+                        <button type="button" onClick={addKBCollection} style={{ marginBottom: '10px' }}>
+                            Add KB Collection
+                        </button>
+                        {formData.kbs.map((kb, index) => (
+                            <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #ddd' }}>
+                                <div style={{ marginBottom: '5px' }}>
+                                    <label>
+                                        Collection: <br />
+                                        <input
+                                            type="text"
+                                            value={kb.collection}
+                                            onChange={(e) => updateKBChannel(index, 'collection', e.target.value)}
+                                            required
+                                            style={{ width: '250px' }}
+                                        />
+                                    </label>
+                                </div>
+                                <div style={{ marginBottom: '5px' }}>
+                                    <label>
+                                        API Key: <br />
+                                        <input
+                                            type="text"
+                                            value={kb.api_key}
+                                            onChange={(e) => updateKBChannel(index, 'api_key', e.target.value)}
+                                            required
+                                            style={{ width: '250px' }}
+                                        />
+                                    </label>
+                                </div>
+                                <button type="button" onClick={() => removeKBChannel(index)} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}>
+                                    Delete
+                                </button>
+                            </div>
+                        ))}
                     </div>
-                    <button type="submit" style={{ padding: '8px 16px' }}>Add Chat Setting</button>
+
+                    <button type="submit" style={{ padding: '8px 16px' }}>Add Channel</button>
                 </form>
             </section>
         </div>
     );
 };
 
-export default ApiAdminPage;
+export default ChannelAdminPage;
