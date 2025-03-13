@@ -2,9 +2,7 @@
 import ChatWindow from './ChatWindow'; // Adjust the import path as necessary
 
 const ChannelAdminPage = () => {
-    // Holds the list of admin chat settings
-    const [settings, setSettings] = useState([]);
-    // Holds form values for creating a new chat setting
+    const [settings, setSettings] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         model: '',
@@ -12,13 +10,15 @@ const ChannelAdminPage = () => {
         temperature: 0.7,
         max_context_length: 4000,
         system_prompt: '',
-        kbs: [] // This will be an array of objects: { api_key: '', collection: '' }
+        kbs: [] // [{ api_key: '', collection: '' }]
     });
     const [error, setError] = useState('');
-    // State to track selected channel UUID
     const [selectedChannelUuid, setSelectedChannelUuid] = useState<string | null>(null);
 
-    // Load admin settings from the API on component mount
+    // New state for editing mode
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingData, setEditingData] = useState<any>(null);
+    
     useEffect(() => {
         fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin`)
             .then(response => response.json())
@@ -26,13 +26,11 @@ const ChannelAdminPage = () => {
             .catch(err => setError(err.message));
     }, []);
 
-    // Handle form input changes for top-level fields
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Add a new KB Channel entry
     const addKBCollection = () => {
         setFormData(prev => ({
             ...prev,
@@ -40,7 +38,6 @@ const ChannelAdminPage = () => {
         }));
     };
 
-    // Remove a KB Channel entry at a given index
     const removeKBChannel = (index: number) => {
         setFormData(prev => {
             const newKbs = [...prev.kbs];
@@ -49,7 +46,6 @@ const ChannelAdminPage = () => {
         });
     };
 
-    // Update a field in a specific KB Channel entry
     const updateKBChannel = (index: number, field: string, value: string) => {
         setFormData(prev => {
             const newKbs = prev.kbs.map((kb, idx) => {
@@ -62,11 +58,8 @@ const ChannelAdminPage = () => {
         });
     };
 
-    // Submit new chat setting to the API
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Prepare payload with proper types and structure.
         const payload = {
             name: formData.name,
             model: formData.model,
@@ -74,9 +67,8 @@ const ChannelAdminPage = () => {
             temperature: Number(formData.temperature),
             max_context_length: Number(formData.max_context_length),
             system_prompt: formData.system_prompt,
-            kbs: formData.kbs // Each object should have the properties: api_key and collection
+            kbs: formData.kbs
         };
-
         fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -89,9 +81,7 @@ const ChannelAdminPage = () => {
                 return response.json();
             })
             .then(newSetting => {
-                // Append the new setting to our list
                 setSettings(prev => [...prev, newSetting]);
-                // Reset form fields
                 setFormData({
                     name: '',
                     model: '',
@@ -105,30 +95,124 @@ const ChannelAdminPage = () => {
             .catch(err => setError(err.message));
     };
 
-    // Delete a chat setting by its UUID with confirmation
     const handleDelete = (uuid: string) => {
         const confirmDelete = window.confirm('Are you sure you want to delete this setting?');
         if (!confirmDelete) return;
-
         fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin/${uuid}`, { method: 'DELETE' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to delete setting');
                 }
-                // Remove the setting from state
                 setSettings(prev => prev.filter((s: any) => s.uuid !== uuid));
             })
             .catch(err => setError(err.message));
     };
 
-    // Handle channel click to open ChatWindow
     const handleChannelClick = (uuid: string) => {
+        if (!!editingId) {
+            uuid = null; 
+        }
         setSelectedChannelUuid(uuid);
     };
 
-    // Handle closing the ChatWindow
     const handleCloseChatWindow = () => {
         setSelectedChannelUuid(null);
+    };
+
+    // EDITING RELATED FUNCTIONS
+
+    // Trigger edit mode for a specific setting
+    const handleEditClick = (e: React.MouseEvent, setting: any) => {
+        e.stopPropagation();
+        setEditingId(setting.uuid);
+        setEditingData({ ...setting });
+    };
+
+    // Update field for editing data
+    const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setEditingData((prev: any) => ({ ...prev, [name]: value }));
+    };
+
+    // Update kb channel for editing data
+    const updateEditKBChannel = (index: number, field: string, value: string) => {
+        setEditingData((prev: any) => {
+            const newKbs = prev.kbs.map((kb: any, idx: number) => {
+                if (idx === index) {
+                    return { ...kb, [field]: value };
+                }
+                return kb;
+            });
+            return { ...prev, kbs: newKbs };
+        });
+    };
+
+    // Add a KB collection for editing data
+    const addEditKBCollection = () => {
+        setEditingData((prev: any) => ({
+            ...prev,
+            kbs: [...prev.kbs, { api_key: '', collection: '' }]
+        }));
+    };
+
+    // Remove a KB channel for editing data
+    const removeEditKBChannel = (index: number) => {
+        setEditingData((prev: any) => {
+            const newKbs = [...prev.kbs];
+            newKbs.splice(index, 1);
+            return { ...prev, kbs: newKbs };
+        });
+    };
+
+    // Cancel editing
+    const handleCancelEdit = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingId(null);
+        setEditingData(null);
+    };
+
+    // Save edited setting
+    const handleSaveEdit = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const payload = {
+            name: editingData.name,
+            model: editingData.model,
+            max_tokens: Number(editingData.max_tokens),
+            temperature: Number(editingData.temperature),
+            max_context_length: Number(editingData.max_context_length),
+            system_prompt: editingData.system_prompt,
+            kbs: editingData.kbs
+        };
+        fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin/${editingData.uuid}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update setting');
+                }
+                return response.json();
+            })
+            .then(updatedSetting => {
+                setSettings(prev =>
+                    prev.map(s => (s.uuid === updatedSetting.uuid ? updatedSetting : s))
+                );
+                setEditingId(null);
+                setEditingData(null);
+            })
+            .catch(err => setError(err.message));
+    };
+
+    // Function to copy UUID to clipboard
+    const copyToClipboard = (uuid: string) => {
+        navigator.clipboard.writeText(uuid)
+            .then(() => {
+                alert('Channel ID copied to clipboard!');
+            })
+            .catch(err => {
+                alert('Failed to copy Channel ID.');
+            });
     };
 
     return (
@@ -154,25 +238,165 @@ const ChannelAdminPage = () => {
                                     backgroundColor: selectedChannelUuid === setting.uuid ? '#f0f0f0' : '#fff'
                                 }}
                             >
-                                <p><strong>Name:</strong> {setting.name}</p>
-                                <p><strong>Model:</strong> {setting.model}</p>
-                                <p><strong>Max Tokens:</strong> {setting.max_tokens}</p>
-                                <p><strong>Temperature:</strong> {setting.temperature}</p>
-                                <p><strong>Max Context Length:</strong> {setting.max_context_length}</p>
-                                <p>
-                                    <strong>Kbs:</strong>{' '}
-                                    {Array.isArray(setting.kbs)
-                                        ? setting.kbs
-                                            .map((kb: any) => `Collection: ${kb.collection}, API Key: ${kb.api_key}`)
-                                            .join(' | ')
-                                        : ''}
-                                </p>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(setting.uuid); }}
-                                    style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}
-                                >
-                                    Delete
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <p style={{ margin: 0, marginRight: '10px' }}>
+                                        <strong>Channel Id:</strong> {setting.uuid}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); copyToClipboard(setting.uuid); }}
+                                        style={{
+                                            padding: '5px 10px',
+                                            cursor: 'pointer',
+                                            backgroundColor: '#007BFF',
+                                            color: '#fff',
+                                            border: 'none',
+                                            borderRadius: '4px'
+                                        }}
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                                {editingId === setting.uuid && editingData ? (
+                                    <div>
+                                        <div style={{ marginBottom: '5px' }}>
+                                            <label>
+                                                Name: <br />
+                                                <input
+                                                    type="text"
+                                                    name="name"
+                                                    value={editingData.name}
+                                                    onChange={handleEditChange}
+                                                    style={{ width: '300px' }}
+                                                />
+                                            </label>
+                                        </div>
+                                        <div style={{ marginBottom: '5px' }}>
+                                            <label>
+                                                Model: <br />
+                                                <input
+                                                    type="text"
+                                                    name="model"
+                                                    value={editingData.model}
+                                                    onChange={handleEditChange}
+                                                    style={{ width: '300px' }}
+                                                />
+                                            </label>
+                                        </div>
+                                        <div style={{ marginBottom: '5px' }}>
+                                            <label>
+                                                System Prompt: <br />
+                                                <textarea
+                                                    name="system_prompt"
+                                                    value={editingData.system_prompt}
+                                                    onChange={handleEditChange}
+                                                    style={{ width: '300px' }}
+                                                />
+                                            </label>
+                                        </div>
+                                        <div style={{ marginBottom: '5px' }}>
+                                            <label>
+                                                Max Tokens: <br />
+                                                <input
+                                                    type="number"
+                                                    name="max_tokens"
+                                                    value={editingData.max_tokens}
+                                                    onChange={handleEditChange}
+                                                    style={{ width: '100px' }}
+                                                />
+                                            </label>
+                                        </div>
+                                        <div style={{ marginBottom: '5px' }}>
+                                            <label>
+                                                Temperature: <br />
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    name="temperature"
+                                                    value={editingData.temperature}
+                                                    onChange={handleEditChange}
+                                                    style={{ width: '100px' }}
+                                                />
+                                            </label>
+                                        </div>
+                                        <div style={{ marginBottom: '5px' }}>
+                                            <label>
+                                                Max Context Length: <br />
+                                                <input
+                                                    type="number"
+                                                    name="max_context_length"
+                                                    value={editingData.max_context_length}
+                                                    onChange={handleEditChange}
+                                                    style={{ width: '100px' }}
+                                                />
+                                            </label>
+                                        </div>
+                                        {/* KB Collections Editing */}
+                                        <div style={{ marginBottom: '5px' }}>
+                                            <h3>KB Collections</h3>
+                                            <button type="button" onClick={addEditKBCollection} style={{ marginBottom: '10px' }}>
+                                                Add KB Collection
+                                            </button>
+                                            {editingData.kbs?.map((kb: any, index: number) => (
+                                                <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #ddd' }}>
+                                                    <div style={{ marginBottom: '5px' }}>
+                                                        <label>
+                                                            Collection: <br />
+                                                            <input
+                                                                type="text"
+                                                                value={kb.collection}
+                                                                onChange={(e) => updateEditKBChannel(index, 'collection', e.target.value)}
+                                                                style={{ width: '250px' }}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                    <div style={{ marginBottom: '5px' }}>
+                                                        <label>
+                                                            API Key: <br />
+                                                            <input
+                                                                type="text"
+                                                                value={kb.api_key}
+                                                                onChange={(e) => updateEditKBChannel(index, 'api_key', e.target.value)}
+                                                                style={{ width: '250px' }}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                    <button type="button" onClick={() => removeEditKBChannel(index)} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}>
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button onClick={handleSaveEdit} style={{ padding: '5px 10px', marginRight: '5px' }}>Save</button>
+                                        <button onClick={handleCancelEdit} style={{ padding: '5px 10px' }}>Cancel</button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p><strong>Name:</strong> {setting.name}</p>
+                                        <p><strong>Model:</strong> {setting.model}</p>
+                                        <p><strong>Max Tokens:</strong> {setting.max_tokens}</p>
+                                        <p><strong>Temperature:</strong> {setting.temperature}</p>
+                                        <p><strong>Max Context Length:</strong> {setting.max_context_length}</p>
+                                        <p>
+                                            <strong>Kbs:</strong>{' '}<br/>
+                                            {Array.isArray(setting.kbs)
+                                                ? setting.kbs.map((kb: any) => `Collection: ${kb.collection}, API Key: ${kb.api_key}`).join(' | ')
+                                                : ''}
+                                        </p>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleEditClick(e, setting); }}
+                                            style={{ marginRight: '5px', padding: '5px 10px' }}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(setting.uuid); }}
+                                            style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                )}
                             </li>
                         ))}
                     </ul>
