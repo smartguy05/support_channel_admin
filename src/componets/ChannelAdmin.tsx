@@ -21,6 +21,8 @@ const ChannelAdminPage = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingData, setEditingData] = useState<any>(null);
     
+    const [showAddChannel, setShowAddChannel] = useState<boolean>(false);
+    
     useEffect(() => {
         fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin`)
             .then(response => response.json())
@@ -84,6 +86,7 @@ const ChannelAdminPage = () => {
             })
             .then(newSetting => {
                 setSettings(prev => [...prev, newSetting]);
+                setShowAddChannel(false);
                 setFormData({
                     name: '',
                     model: '',
@@ -208,6 +211,14 @@ const ChannelAdminPage = () => {
             })
             .catch(err => setError(err.message));
     };
+    
+    const handleAddChannel = () => {
+        setShowAddChannel(true);
+    }
+
+    const handleCloseAddChannel = () => {
+        setShowAddChannel(false);
+    }
 
     // Function to copy UUID to clipboard
     const copyToClipboard = (uuid: string) => {
@@ -223,6 +234,19 @@ const ChannelAdminPage = () => {
     return (
         <div className="admin-page" style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
             <h1>Channel Settings</h1>
+            <button 
+                style={{
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                    backgroundColor: '#1EA54CFF',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px'
+                }} 
+                onClick={handleAddChannel}
+            >
+                Add New Channel
+            </button>
             {error && <p style={{ color: 'red' }}>{error}</p>}
 
             {/* List of existing settings */}
@@ -422,142 +446,147 @@ const ChannelAdminPage = () => {
             </section>
 
             {/* Form for adding a new chat setting */}
-            <section style={{ marginTop: '30px' }}>
-                <h2>Add New Channel</h2>
-                <form onSubmit={handleSubmit}>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>
-                            Name: <br />
-                            <input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '300px' }}
-                            />
-                        </label>
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>
-                            Model: <br />
-                            <input
-                                type="text"
-                                name="model"
-                                value={formData.model}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '300px' }}
-                            />
-                        </label>
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>
-                            System Prompt: <br />
-                            <textarea
-                                name="system_prompt"
-                                value={formData.system_prompt}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '300px' }}
-                            />
-                        </label>
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>
-                            Initial Message: <br />
-                            <textarea
-                                name="initial_message"
-                                value={formData.initial_message}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '300px' }}
-                            />
-                        </label>
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>
-                            Max Tokens: <br />
-                            <input
-                                type="number"
-                                name="max_tokens"
-                                value={formData.max_tokens}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '100px' }}
-                            />
-                        </label>
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>
-                            Temperature: <br />
-                            <input
-                                type="number"
-                                step="0.1"
-                                name="temperature"
-                                value={formData.temperature}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '100px' }}
-                            />
-                        </label>
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>
-                            Max Context Length: <br />
-                            <input
-                                type="number"
-                                name="max_context_length"
-                                value={formData.max_context_length}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '100px' }}
-                            />
-                        </label>
-                    </div>
+            {showAddChannel && (
+                <section style={{ position: 'absolute', top: '10vh', backgroundColor: '#fff', left: '50%', transform: 'translate(-50%)', width: '70vw', border: '1px solid #000', paddingBottom: '2vh' }}>
+                    <h2>Add New Channel</h2>
+                    <form onSubmit={handleSubmit}>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label>
+                                Name: <br />
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    required
+                                    style={{ width: '300px' }}
+                                />
+                            </label>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label>
+                                Model: <br />
+                                <input
+                                    type="text"
+                                    name="model"
+                                    value={formData.model}
+                                    onChange={handleInputChange}
+                                    required
+                                    style={{ width: '300px' }}
+                                />
+                            </label>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label>
+                                System Prompt: <br />
+                                <textarea
+                                    name="system_prompt"
+                                    value={formData.system_prompt}
+                                    onChange={handleInputChange}
+                                    required
+                                    style={{ width: '300px' }}
+                                />
+                            </label>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label>
+                                Initial Message: <br />
+                                <textarea
+                                    name="initial_message"
+                                    value={formData.initial_message}
+                                    onChange={handleInputChange}
+                                    required
+                                    style={{ width: '300px' }}
+                                />
+                            </label>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label>
+                                Max Tokens: <br />
+                                <input
+                                    type="number"
+                                    name="max_tokens"
+                                    value={formData.max_tokens}
+                                    onChange={handleInputChange}
+                                    required
+                                    style={{ width: '100px' }}
+                                />
+                            </label>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label>
+                                Temperature: <br />
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    name="temperature"
+                                    value={formData.temperature}
+                                    onChange={handleInputChange}
+                                    required
+                                    style={{ width: '100px' }}
+                                />
+                            </label>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label>
+                                Max Context Length: <br />
+                                <input
+                                    type="number"
+                                    name="max_context_length"
+                                    value={formData.max_context_length}
+                                    onChange={handleInputChange}
+                                    required
+                                    style={{ width: '100px' }}
+                                />
+                            </label>
+                        </div>
 
-                    {/* KB Collections Section */}
-                    <div style={{ marginBottom: '10px' }}>
-                        <h3>KB Collections</h3>
-                        <button type="button" onClick={addKBCollection} style={{ marginBottom: '10px' }}>
-                            Add KB Collection
-                        </button>
-                        {formData.kbs.map((kb, index) => (
-                            <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #ddd' }}>
-                                <div style={{ marginBottom: '5px' }}>
-                                    <label>
-                                        Collection: <br />
-                                        <input
-                                            type="text"
-                                            value={kb.collection}
-                                            onChange={(e) => updateKBChannel(index, 'collection', e.target.value)}
-                                            required
-                                            style={{ width: '250px' }}
-                                        />
-                                    </label>
+                        {/* KB Collections Section */}
+                        <div style={{ marginBottom: '10px' }}>
+                            <h3>KB Collections</h3>
+                            <button type="button" onClick={addKBCollection} style={{ marginBottom: '10px' }}>
+                                Add KB Collection
+                            </button>
+                            {formData.kbs.map((kb, index) => (
+                                <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #ddd' }}>
+                                    <div style={{ marginBottom: '5px' }}>
+                                        <label>
+                                            Collection: <br />
+                                            <input
+                                                type="text"
+                                                value={kb.collection}
+                                                onChange={(e) => updateKBChannel(index, 'collection', e.target.value)}
+                                                required
+                                                style={{ width: '250px' }}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div style={{ marginBottom: '5px' }}>
+                                        <label>
+                                            API Key: <br />
+                                            <input
+                                                type="text"
+                                                value={kb.api_key}
+                                                onChange={(e) => updateKBChannel(index, 'api_key', e.target.value)}
+                                                required
+                                                style={{ width: '250px' }}
+                                            />
+                                        </label>
+                                    </div>
+                                    <button type="button" onClick={() => removeKBChannel(index)} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}>
+                                        Delete
+                                    </button>
                                 </div>
-                                <div style={{ marginBottom: '5px' }}>
-                                    <label>
-                                        API Key: <br />
-                                        <input
-                                            type="text"
-                                            value={kb.api_key}
-                                            onChange={(e) => updateKBChannel(index, 'api_key', e.target.value)}
-                                            required
-                                            style={{ width: '250px' }}
-                                        />
-                                    </label>
-                                </div>
-                                <button type="button" onClick={() => removeKBChannel(index)} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}>
-                                    Delete
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
 
-                    <button type="submit" style={{ padding: '8px 16px' }}>Add Channel</button>
-                </form>
-            </section>
+                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-around' }}>
+                            <button type="submit" style={{ padding: '8px 16px' }}>Add Channel</button>
+                            <button type="button" style={{ padding: '8px 16px' }} onClick={handleCloseAddChannel}>Cancel</button>
+                        </div>
+                    </form>
+                </section>    
+            )}
 
             {/* Conditionally render ChatWindow */}
             {selectedChannelUuid && (
