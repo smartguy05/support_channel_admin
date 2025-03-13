@@ -6,17 +6,13 @@ function CollectionAdminPage() {
     const [collections, setCollections] = useState<string[]>([]);
     const [collection, setCollection] = useState('');
     const [documents, setDocuments] = useState<string[]>([]);
-    const [file, setFile] = useState<File | null>(null);
-    const [message, setMessage] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
     const [dragActive, setDragActive] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
     const [newCollectionName, setNewCollectionName] = useState('');
     const [newCollectionDescription, setNewCollectionDescription] = useState('');
     const [addingCollection, setAddingCollection] = useState(false);
     const [showAddCollection, setShowAddCollection] = useState(false);
-    const [apiKey, setApiKey] = useState<string>(null);
+    const [apiKey, setApiKey] = useState<string | null>(null);
     const [addingApiKey, setAddingApiKey] = useState(false);
 
     // Fetch collections on component mount
@@ -25,7 +21,6 @@ function CollectionAdminPage() {
     }, []);
 
     const fetchCollections = () => {
-        setLoading(true);
         fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_KB_URL}/collections`, {
             method: 'GET',
             headers: {
@@ -41,12 +36,10 @@ function CollectionAdminPage() {
             })
             .then((data: string[]) => {
                 setCollections(data);
-                setLoading(false);
             })
             .catch((err) => {
                 console.error('Error fetching collections:', err);
-                setError('Failed to load collections.');
-                setLoading(false);
+                showErrorToast('Failed to load collections.');
             });
     };
 
@@ -69,8 +62,11 @@ function CollectionAdminPage() {
             },
         })
             .then(response => response.json())
-            .then(data => setApiKey(data ?? []))
-            .catch(error => console.error('Error fetching API keys:', error));
+            .then(data => setApiKey(data ?? null))
+            .catch(error => {
+                console.error('Error fetching API keys:', error);
+                showErrorToast('Failed to fetch API keys.');
+            });
     }
 
     const fetchDocuments = (col: string) => {
@@ -90,7 +86,7 @@ function CollectionAdminPage() {
             .then((data: string[]) => setDocuments(data))
             .catch((err) => {
                 console.error('Error fetching documents:', err);
-                setError('Failed to fetch documents.');
+                showErrorToast('Failed to fetch documents.');
             });
     };
 
@@ -110,14 +106,12 @@ function CollectionAdminPage() {
                 return res.json();
             })
             .then(() => {
-                setMessage(`Deleted ${filename}`);
-                showSuccessToast('File deleted');
+                showSuccessToast('File deleted successfully.');
                 setDocuments((prevDocs) => prevDocs.filter((doc) => doc !== filename));
             })
             .catch((err) => {
                 console.error('Error deleting document:', err);
-                setMessage('Error deleting document.');
-                showErrorToast(err);
+                showErrorToast('Error deleting document.');
             });
     };
 
@@ -140,7 +134,7 @@ function CollectionAdminPage() {
         setDragActive(false);
 
         if (!collection) {
-            setUploadStatus('Please select a collection before uploading.');
+            showErrorToast('Please select a collection before uploading.');
             return;
         }
 
@@ -160,19 +154,16 @@ function CollectionAdminPage() {
 
                 if (response.ok) {
                     await response.json();
-                    setUploadStatus('Upload successful!');
-                    showSuccessToast('Upload successful');
+                    showSuccessToast('Upload successful.');
                     fetchDocuments(collection);
                 } else {
                     const errorText = await response.text();
-                    setUploadStatus(`Upload failed: ${errorText}`);
+                    showErrorToast(`Upload failed: ${errorText}`);
                     console.error('Upload error', response.status, errorText);
-                    showErrorToast(errorText);
                 }
             } catch (error) {
-                setUploadStatus('Upload failed.');
+                showErrorToast('Upload failed.');
                 console.error('Upload error', error);
-                showErrorToast(error);
             }
 
             e.dataTransfer.clearData();
@@ -302,25 +293,19 @@ function CollectionAdminPage() {
             <div className="collections">
                 <label>
                     Collection Name:
-                    {loading ? (
-                        <span> Loading collections...</span>
-                    ) : error ? (
-                        <span style={{ color: 'red' }}>{error}</span>
-                    ) : (
-                        <select
-                            value={collection}
-                            onChange={(e) => setCollection(e.target.value)}
-                            required
-                            style={{ marginLeft: '10px' }}
-                        >
-                            <option value="">-- Select Collection --</option>
-                            {collections.map((col) => (
-                                <option key={col} value={col}>
-                                    {col}
-                                </option>
-                            ))}
-                        </select>
-                    )}
+                    <select
+                        value={collection}
+                        onChange={(e) => setCollection(e.target.value)}
+                        required
+                        style={{ marginLeft: '10px' }}
+                    >
+                        <option value="">-- Select Collection --</option>
+                        {collections.map((col) => (
+                            <option key={col} value={col}>
+                                {col}
+                            </option>
+                        ))}
+                    </select>
                 </label>
                 <button
                     onClick={() => setShowAddCollection(true)}
