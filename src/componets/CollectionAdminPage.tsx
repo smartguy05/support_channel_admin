@@ -287,6 +287,16 @@ function CollectionAdminPage() {
             });
     };
 
+    const copyToClipboard = (uuid: string) => {
+        navigator.clipboard.writeText(uuid)
+            .then(() => {
+                alert('Collection API Key copied to clipboard!');
+            })
+            .catch(err => {
+                alert('Failed to copy Collection API Key.');
+            });
+    };
+
     return (
         <div>
             <h2>Collections</h2>
@@ -380,6 +390,20 @@ function CollectionAdminPage() {
                         <div>
                             <h3>API Key</h3>
                             <b>{apiKey}</b>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); copyToClipboard(apiKey); }}
+                                style={{
+                                    padding: '5px 10px',
+                                    cursor: 'pointer',
+                                    backgroundColor: '#007BFF',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px'
+                                }}
+                            >
+                                Copy
+                            </button>
                         </div>
                     )}
                     <h3>Documents in collection "{collection}"</h3>

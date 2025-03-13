@@ -1,8 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, {useState, useEffect} from 'react';
 import ChatWindow from './ChatWindow';
-import {ChannelConfig} from "../models/channel-config.model"; // Adjust the import path as necessary
+import {ChannelConfig} from "../models/channel-config.model";
+import {showErrorToast} from "../helpers/ToastHelpers"; // Adjust the import path as necessary
 
 const ChannelAdminPage = () => {
+    const [collections, setCollections] = useState<string[]>([]);
     const [settings, setSettings] = useState<ChannelConfig[]>([]);
     const [formData, setFormData] = useState({
         name: '',
@@ -28,7 +30,31 @@ const ChannelAdminPage = () => {
             .then(response => response.json())
             .then(data => setSettings(data.map(m => new ChannelConfig(m))))
             .catch(err => setError(err.message));
+        fetchCollections();
     }, []);
+
+    const fetchCollections = () => {
+        fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_KB_URL}/collections`, {
+            method: 'GET',
+            headers: {
+                'accept': 'application/json'
+            }
+        })
+            .then(async (res) => {
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Error ${res.status}: ${errorText}`);
+                }
+                return res.json();
+            })
+            .then((data: string[]) => {
+                setCollections(data);
+            })
+            .catch((err) => {
+                console.error('Error fetching collections:', err);
+                showErrorToast('Failed to load collections.');
+            });
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -230,6 +256,14 @@ const ChannelAdminPage = () => {
                 alert('Failed to copy Channel ID.');
             });
     };
+    
+    const handleCollectionSelected = (index, e) => {
+        updateEditKBChannel(index, 'collection', e.target.value);
+        fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_KB_URL}/admin/${e.target.value}`)
+            .then(response => response.json())
+            .then(data => updateEditKBChannel(index, 'api_key', data))
+            .catch(err => setError(err.message));
+    };
 
     return (
         <div className="admin-page" style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
@@ -379,26 +413,36 @@ const ChannelAdminPage = () => {
                                             </button>
                                             {editingData.kbs?.map((kb: any, index: number) => (
                                                 <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #ddd' }}>
+                                                    {(!kb.collection || !kb.api_key) && (
+                                                        <div style={{marginBottom: '5px'}}>
+                                                            <label>
+                                                                Collection Name:
+                                                                <select
+                                                                    value={kb}
+                                                                    onChange={(e) => handleCollectionSelected(index, e)}
+                                                                    required
+                                                                    style={{marginLeft: '10px'}}
+                                                                >
+                                                                    <option value="">-- Select Collection --</option>
+                                                                    {collections.map((col) => (
+                                                                        <option key={col} value={col}>
+                                                                            {col}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </label>
+                                                        </div>
+                                                    )}
                                                     <div style={{ marginBottom: '5px' }}>
                                                         <label>
                                                             Collection: <br />
-                                                            <input
-                                                                type="text"
-                                                                value={kb.collection}
-                                                                onChange={(e) => updateEditKBChannel(index, 'collection', e.target.value)}
-                                                                style={{ width: '250px' }}
-                                                            />
+                                                            <label>{kb.collection}</label>
                                                         </label>
                                                     </div>
                                                     <div style={{ marginBottom: '5px' }}>
                                                         <label>
                                                             API Key: <br />
-                                                            <input
-                                                                type="text"
-                                                                value={kb.api_key}
-                                                                onChange={(e) => updateEditKBChannel(index, 'api_key', e.target.value)}
-                                                                style={{ width: '250px' }}
-                                                            />
+                                                            <label>{kb.api_key}</label>
                                                         </label>
                                                     </div>
                                                     <button type="button" onClick={() => removeEditKBChannel(index)} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}>
