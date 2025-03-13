@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import ChatWindow from './ChatWindow'; // Adjust the import path as necessary
 
 const ChannelAdminPage = () => {
     // Holds the list of admin chat settings
@@ -14,6 +15,8 @@ const ChannelAdminPage = () => {
         kbs: [] // This will be an array of objects: { api_key: '', collection: '' }
     });
     const [error, setError] = useState('');
+    // State to track selected channel UUID
+    const [selectedChannelUuid, setSelectedChannelUuid] = useState<string | null>(null);
 
     // Load admin settings from the API on component mount
     useEffect(() => {
@@ -24,7 +27,7 @@ const ChannelAdminPage = () => {
     }, []);
 
     // Handle form input changes for top-level fields
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -38,7 +41,7 @@ const ChannelAdminPage = () => {
     };
 
     // Remove a KB Channel entry at a given index
-    const removeKBChannel = (index) => {
+    const removeKBChannel = (index: number) => {
         setFormData(prev => {
             const newKbs = [...prev.kbs];
             newKbs.splice(index, 1);
@@ -47,7 +50,7 @@ const ChannelAdminPage = () => {
     };
 
     // Update a field in a specific KB Channel entry
-    const updateKBChannel = (index, field, value) => {
+    const updateKBChannel = (index: number, field: string, value: string) => {
         setFormData(prev => {
             const newKbs = prev.kbs.map((kb, idx) => {
                 if (idx === index) {
@@ -60,7 +63,7 @@ const ChannelAdminPage = () => {
     };
 
     // Submit new chat setting to the API
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         // Prepare payload with proper types and structure.
@@ -103,7 +106,7 @@ const ChannelAdminPage = () => {
     };
 
     // Delete a chat setting by its UUID with confirmation
-    const handleDelete = (uuid) => {
+    const handleDelete = (uuid: string) => {
         const confirmDelete = window.confirm('Are you sure you want to delete this setting?');
         if (!confirmDelete) return;
 
@@ -113,9 +116,19 @@ const ChannelAdminPage = () => {
                     throw new Error('Failed to delete setting');
                 }
                 // Remove the setting from state
-                setSettings(prev => prev.filter(s => s.uuid !== uuid));
+                setSettings(prev => prev.filter((s: any) => s.uuid !== uuid));
             })
             .catch(err => setError(err.message));
+    };
+
+    // Handle channel click to open ChatWindow
+    const handleChannelClick = (uuid: string) => {
+        setSelectedChannelUuid(uuid);
+    };
+
+    // Handle closing the ChatWindow
+    const handleCloseChatWindow = () => {
+        setSelectedChannelUuid(null);
     };
 
     return (
@@ -129,8 +142,18 @@ const ChannelAdminPage = () => {
                     <p>No chat settings available.</p>
                 ) : (
                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {settings.filter(f => !!f.uuid).map(setting => (
-                            <li key={setting.uuid} style={{ border: '1px solid #ccc', marginBottom: '10px', padding: '10px' }}>
+                        {settings.filter((f: any) => !!f.uuid).map((setting: any) => (
+                            <li
+                                key={setting.uuid}
+                                onClick={() => handleChannelClick(setting.uuid)}
+                                style={{
+                                    border: '1px solid #ccc',
+                                    marginBottom: '10px',
+                                    padding: '10px',
+                                    cursor: 'pointer',
+                                    backgroundColor: selectedChannelUuid === setting.uuid ? '#f0f0f0' : '#fff'
+                                }}
+                            >
                                 <p><strong>Name:</strong> {setting.name}</p>
                                 <p><strong>Model:</strong> {setting.model}</p>
                                 <p><strong>Max Tokens:</strong> {setting.max_tokens}</p>
@@ -140,11 +163,14 @@ const ChannelAdminPage = () => {
                                     <strong>Kbs:</strong>{' '}
                                     {Array.isArray(setting.kbs)
                                         ? setting.kbs
-                                            .map(kb => `Collection: ${kb.collection}, API Key: ${kb.api_key}`)
+                                            .map((kb: any) => `Collection: ${kb.collection}, API Key: ${kb.api_key}`)
                                             .join(' | ')
                                         : ''}
                                 </p>
-                                <button onClick={() => handleDelete(setting.uuid)} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(setting.uuid); }}
+                                    style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px' }}
+                                >
                                     Delete
                                 </button>
                             </li>
@@ -278,6 +304,13 @@ const ChannelAdminPage = () => {
                     <button type="submit" style={{ padding: '8px 16px' }}>Add Channel</button>
                 </form>
             </section>
+
+            {/* Conditionally render ChatWindow */}
+            {selectedChannelUuid && (
+                <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+                    <ChatWindow uuid={selectedChannelUuid} onClose={handleCloseChatWindow} />
+                </div>
+            )}
         </div>
     );
 };
