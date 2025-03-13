@@ -8,6 +8,7 @@ interface ChatMessage {
 
 interface ChatWindowProps {
 	uuid: string;
+	initialMessage?: string;
 	onClose: () => void;
 }
 
@@ -26,8 +27,9 @@ const renderMarkdown = (text: string): JSX.Element => {
 	return <div dangerouslySetInnerHTML={{ __html: html }} />;
 };
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ uuid, onClose }) => {
-	const [messages, setMessages] = useState<ChatMessage[]>([]);
+const ChatWindow: React.FC<ChatWindowProps> = ({ uuid, onClose, initialMessage }) => {
+	const initialMessages: ChatMessage[] = !!initialMessage ? [{ sender: 'bot', text: initialMessage}] : [];
+	const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
 	const [input, setInput] = useState<string>('');
 	const [loading, setLoading] = useState<boolean>(false);
 	const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -140,7 +142,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ uuid, onClose }) => {
 				))}
 				{loading && (
 					<div style={{ textAlign: 'left', marginBottom: '10px' }}>
-						Loading...
+						Thinking...
 					</div>
 				)}
 				<div ref={messagesEndRef} />

@@ -1,8 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
-import ChatWindow from './ChatWindow'; // Adjust the import path as necessary
+import ChatWindow from './ChatWindow';
+import {ChannelConfig} from "../models/channel-config.model"; // Adjust the import path as necessary
 
 const ChannelAdminPage = () => {
-    const [settings, setSettings] = useState<any[]>([]);
+    const [settings, setSettings] = useState<ChannelConfig[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         model: '',
@@ -10,6 +11,7 @@ const ChannelAdminPage = () => {
         temperature: 0.7,
         max_context_length: 4000,
         system_prompt: '',
+        initial_message: '',
         kbs: [] // [{ api_key: '', collection: '' }]
     });
     const [error, setError] = useState('');
@@ -22,7 +24,7 @@ const ChannelAdminPage = () => {
     useEffect(() => {
         fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin`)
             .then(response => response.json())
-            .then(data => setSettings(data))
+            .then(data => setSettings(data.map(m => new ChannelConfig(m))))
             .catch(err => setError(err.message));
     }, []);
 
@@ -86,6 +88,7 @@ const ChannelAdminPage = () => {
                     name: '',
                     model: '',
                     system_prompt: '',
+                    initial_message: '',
                     max_tokens: 150,
                     temperature: 0.7,
                     max_context_length: 4000,
@@ -108,11 +111,12 @@ const ChannelAdminPage = () => {
             .catch(err => setError(err.message));
     };
 
-    const handleChannelClick = (uuid: string) => {
+    const handleChannelClick = (setting) => {
         if (!!editingId) {
-            uuid = null; 
+            setSelectedChannelUuid(null); 
+        } else {
+            setSelectedChannelUuid(setting.uuid);
         }
-        setSelectedChannelUuid(uuid);
     };
 
     const handleCloseChatWindow = () => {
@@ -181,6 +185,7 @@ const ChannelAdminPage = () => {
             temperature: Number(editingData.temperature),
             max_context_length: Number(editingData.max_context_length),
             system_prompt: editingData.system_prompt,
+            initial_message: editingData.initial_message,
             kbs: editingData.kbs
         };
         fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_API_URL}/admin/${editingData.uuid}`, {
@@ -229,7 +234,7 @@ const ChannelAdminPage = () => {
                         {settings.filter((f: any) => !!f.uuid).map((setting: any) => (
                             <li
                                 key={setting.uuid}
-                                onClick={() => handleChannelClick(setting.uuid)}
+                                onClick={() => handleChannelClick(setting)}
                                 style={{
                                     border: '1px solid #ccc',
                                     marginBottom: '10px',
@@ -289,6 +294,17 @@ const ChannelAdminPage = () => {
                                                 <textarea
                                                     name="system_prompt"
                                                     value={editingData.system_prompt}
+                                                    onChange={handleEditChange}
+                                                    style={{ width: '300px' }}
+                                                />
+                                            </label>
+                                        </div>
+                                        <div style={{ marginBottom: '5px' }}>
+                                            <label>
+                                                Initial Message: <br />
+                                                <textarea
+                                                    name="initial_message"
+                                                    value={editingData.initial_message}
                                                     onChange={handleEditChange}
                                                     style={{ width: '300px' }}
                                                 />
@@ -374,6 +390,8 @@ const ChannelAdminPage = () => {
                                     <div>
                                         <p><strong>Name:</strong> {setting.name}</p>
                                         <p><strong>Model:</strong> {setting.model}</p>
+                                        <p><strong>System Prompt:</strong> {setting.system_prompt}</p>
+                                        <p><strong>Initial Message:</strong> {setting.initial_message}</p>
                                         <p><strong>Max Tokens:</strong> {setting.max_tokens}</p>
                                         <p><strong>Temperature:</strong> {setting.temperature}</p>
                                         <p><strong>Max Context Length:</strong> {setting.max_context_length}</p>
@@ -439,6 +457,18 @@ const ChannelAdminPage = () => {
                             <textarea
                                 name="system_prompt"
                                 value={formData.system_prompt}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: '300px' }}
+                            />
+                        </label>
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                        <label>
+                            Initial Message: <br />
+                            <textarea
+                                name="initial_message"
+                                value={formData.initial_message}
                                 onChange={handleInputChange}
                                 required
                                 style={{ width: '300px' }}
@@ -532,7 +562,7 @@ const ChannelAdminPage = () => {
             {/* Conditionally render ChatWindow */}
             {selectedChannelUuid && (
                 <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
-                    <ChatWindow uuid={selectedChannelUuid} onClose={handleCloseChatWindow} />
+                    <ChatWindow uuid={selectedChannelUuid} onClose={handleCloseChatWindow} initialMessage={settings.find(f => f.uuid === selectedChannelUuid).initial_message ?? ''} />
                 </div>
             )}
         </div>
