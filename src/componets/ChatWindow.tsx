@@ -56,6 +56,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ uuid, onClose, initialMessage }
 						accept: 'application/json',
 						'Content-Type': 'application/json',
 					},
+					credentials: 'include',
 					body: JSON.stringify({ query: trimmedInput }),
 				}
 			);
