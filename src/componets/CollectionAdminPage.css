@@ -1,86 +1,109 @@
 /* CollectionAdminPage.css */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.collections-page {
+    padding: 0 5vw;
+}
 
 .collection-admin {
     padding: 20px;
     font-family: Arial, sans-serif;
 }
 
-.collection-admin h2 {
+h2 {
     color: #333;
 }
 
-.collection-admin .collection-controls {
+.api-key {
+    display: flex;
+    justify-content: center;
+    gap: 10vw;
+}
+
+.collection-controls {
     display: flex;
     align-items: center;
     margin-bottom: 20px;
+    & label {
+        margin-right: 10px;
+    }
+
+    & select {
+        margin-left: 10px;
+        padding: 5px;
+    }
+
+    & button {
+        margin-left: 10px;
+        padding: 5px 10px;
+        font-size: 16px;
+        cursor: pointer;
+    }
 }
 
-.collection-admin .collection-controls label {
-    margin-right: 10px;
+.documents-list {
+    max-height: 300px; /* Adjust the height as needed */
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+
+    & li {
+        display: flex;
+        justify-content: space-around;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+
+        & button {
+            background-color: #f44336;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    }
 }
 
-.collection-admin .collection-controls select {
-    margin-left: 10px;
-    padding: 5px;
-}
-
-.collection-admin .collection-controls button {
-    margin-left: 10px;
-    padding: 5px 10px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.collection-admin .documents-list {
-    list-style-type: none;
-    padding-left: 0;
-}
-
-.collection-admin .documents-list li {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.collection-admin .documents-list li button {
-    background-color: #f44336;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 5px 10px;
-    cursor: pointer;
-}
-
-.collection-admin .upload-area {
+.upload-area {
     border: 2px dashed #aaa;
     border-radius: 4px;
     padding: 20px;
     text-align: center;
     margin-top: 20px;
+
+    &.drag-active {
+        background-color: #f0f8ff;
+    }
 }
 
-.collection-admin .upload-area.drag-active {
-    background-color: #f0f8ff;
-}
-
-.collection-admin .error-message {
+.error-message {
     color: red;
 }
 
-.collection-admin .success-message {
+.success-message {
     color: green;
 }
 
-ul.documents-list {
-    list-style-type: none;
-    padding-left: 0;
+.spinner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
     display: flex;
-    flex-direction: column;
-    
-    li {
-        display: flex;
-        justify-content: center;
-        gap: 3vw;
-    }
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007BFF;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
 }

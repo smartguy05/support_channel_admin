@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { showErrorToast, showSuccessToast } from "../helpers/ToastHelpers";
 import './CollectionAdminPage.css';
 
@@ -6,18 +6,16 @@ function CollectionAdminPage() {
     const [collections, setCollections] = useState<string[]>([]);
     const [collection, setCollection] = useState('');
     const [documents, setDocuments] = useState<string[]>([]);
-    const [file, setFile] = useState<File | null>(null);
-    const [message, setMessage] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
     const [dragActive, setDragActive] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
     const [newCollectionName, setNewCollectionName] = useState('');
     const [newCollectionDescription, setNewCollectionDescription] = useState('');
     const [addingCollection, setAddingCollection] = useState(false);
     const [showAddCollection, setShowAddCollection] = useState(false);
-    const [apiKey, setApiKey] = useState<string>(null);
+    const [apiKey, setApiKey] = useState<string | null>(null);
     const [addingApiKey, setAddingApiKey] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Fetch collections on component mount
     useEffect(() => {
@@ -25,7 +23,6 @@ function CollectionAdminPage() {
     }, []);
 
     const fetchCollections = () => {
-        setLoading(true);
         fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_KB_URL}/collections`, {
             method: 'GET',
             headers: {
@@ -41,12 +38,10 @@ function CollectionAdminPage() {
             })
             .then((data: string[]) => {
                 setCollections(data);
-                setLoading(false);
             })
             .catch((err) => {
                 console.error('Error fetching collections:', err);
-                setError('Failed to load collections.');
-                setLoading(false);
+                showErrorToast('Failed to load collections.');
             });
     };
 
@@ -69,8 +64,11 @@ function CollectionAdminPage() {
             },
         })
             .then(response => response.json())
-            .then(data => setApiKey(data ?? []))
-            .catch(error => console.error('Error fetching API keys:', error));
+            .then(data => setApiKey(data ?? null))
+            .catch(error => {
+                console.error('Error fetching API keys:', error);
+                showErrorToast('Failed to fetch API keys.');
+            });
     }
 
     const fetchDocuments = (col: string) => {
@@ -87,10 +85,10 @@ function CollectionAdminPage() {
                 }
                 return res.json();
             })
-            .then((data: string[]) => setDocuments(data))
+            .then((data: string[]) => setDocuments([...data].sort((a, b) => a.localeCompare(b))))
             .catch((err) => {
                 console.error('Error fetching documents:', err);
-                setError('Failed to fetch documents.');
+                showErrorToast('Failed to fetch documents.');
             });
     };
 
@@ -110,14 +108,12 @@ function CollectionAdminPage() {
                 return res.json();
             })
             .then(() => {
-                setMessage(`Deleted ${filename}`);
-                showSuccessToast('File deleted');
+                showSuccessToast('File deleted successfully.');
                 setDocuments((prevDocs) => prevDocs.filter((doc) => doc !== filename));
             })
             .catch((err) => {
                 console.error('Error deleting document:', err);
-                setMessage('Error deleting document.');
-                showErrorToast(err);
+                showErrorToast('Error deleting document.');
             });
     };
 
@@ -133,49 +129,69 @@ function CollectionAdminPage() {
         }
     };
 
+    const uploadFiles = async (files: FileList) => {
+        if (!collection) {
+            showErrorToast('Please select a collection before uploading.');
+            return;
+        }
+
+        if (files.length > 20) {
+            showErrorToast('You can upload a maximum of 20 files at once.');
+            return;
+        }
+
+        const formData = new FormData();
+        Array.from(files).forEach((file) => {
+            formData.append('files', file, file.name);
+        });
+
+        setIsUploading(true);
+
+        try {
+            const response = await fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_KB_URL}/documents/${collection}`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            if (response.ok) {
+                await response.json();
+                showSuccessToast('Upload successful.');
+                fetchDocuments(collection);
+            } else {
+                const errorText = await response.text();
+                showErrorToast(`Upload failed: ${errorText}`);
+                console.error('Upload error', response.status, errorText);
+            }
+        } catch (error) {
+            showErrorToast('Upload failed.');
+            console.error('Upload error', error);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     // Handle file drop
     const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
         setDragActive(false);
 
-        if (!collection) {
-            setUploadStatus('Please select a collection before uploading.');
-            return;
-        }
-
-        if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-            const file = e.dataTransfer.files[0];
-            const formData = new FormData();
-            formData.append('file', file, file.name);
-
-            try {
-                const response = await fetch(`${process.env.REACT_APP_SUPPORT_CHANNEL_KB_URL}/documents/${collection}`, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                    body: formData,
-                });
-
-                if (response.ok) {
-                    await response.json();
-                    setUploadStatus('Upload successful!');
-                    showSuccessToast('Upload successful');
-                    fetchDocuments(collection);
-                } else {
-                    const errorText = await response.text();
-                    setUploadStatus(`Upload failed: ${errorText}`);
-                    console.error('Upload error', response.status, errorText);
-                    showErrorToast(errorText);
-                }
-            } catch (error) {
-                setUploadStatus('Upload failed.');
-                console.error('Upload error', error);
-                showErrorToast(error);
-            }
-
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+            await uploadFiles(files);
             e.dataTransfer.clearData();
+        }
+    };
+
+    // Handle file selection via input
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            uploadFiles(files);
+            e.target.value = '';
         }
     };
 
@@ -296,31 +312,41 @@ function CollectionAdminPage() {
             });
     };
 
+    const copyToClipboard = (uuid: string) => {
+        navigator.clipboard.writeText(uuid)
+            .then(() => {
+                alert('Collection API Key copied to clipboard!');
+            })
+            .catch(err => {
+                alert('Failed to copy Collection API Key.');
+            });
+    };
+
+    const handleUploadDivClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
     return (
-        <div>
+        <div className="collections-page">
             <h2>Collections</h2>
             <div className="collections">
                 <label>
                     Collection Name:
-                    {loading ? (
-                        <span> Loading collections...</span>
-                    ) : error ? (
-                        <span style={{ color: 'red' }}>{error}</span>
-                    ) : (
-                        <select
-                            value={collection}
-                            onChange={(e) => setCollection(e.target.value)}
-                            required
-                            style={{ marginLeft: '10px' }}
-                        >
-                            <option value="">-- Select Collection --</option>
-                            {collections.map((col) => (
-                                <option key={col} value={col}>
-                                    {col}
-                                </option>
-                            ))}
-                        </select>
-                    )}
+                    <select
+                        value={collection}
+                        onChange={(e) => setCollection(e.target.value)}
+                        required
+                        style={{ marginLeft: '10px' }}
+                    >
+                        <option value="">-- Select Collection --</option>
+                        {collections.map((col) => (
+                            <option key={col} value={col}>
+                                {col}
+                            </option>
+                        ))}
+                    </select>
                 </label>
                 <button
                     onClick={() => setShowAddCollection(true)}
@@ -394,7 +420,23 @@ function CollectionAdminPage() {
                     {!!apiKey && (
                         <div>
                             <h3>API Key</h3>
-                            <b>{apiKey}</b>
+                            <div className="api-key">
+                                <b>{apiKey}</b>
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); copyToClipboard(apiKey); }}
+                                    style={{
+                                        padding: '5px 10px',
+                                        cursor: 'pointer',
+                                        backgroundColor: '#007BFF',
+                                        color: '#fff',
+                                        border: 'none',
+                                        borderRadius: '4px'
+                                    }}
+                                >
+                                    Copy
+                                </button>
+                            </div>
                         </div>
                     )}
                     <h3>Documents in collection "{collection}"</h3>
@@ -412,6 +454,7 @@ function CollectionAdminPage() {
                     </ul>
 
                     <div
+                        onClick={handleUploadDivClick}
                         onDragEnter={handleDrag}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDrag}
@@ -422,11 +465,25 @@ function CollectionAdminPage() {
                             padding: '20px',
                             textAlign: 'center',
                             backgroundColor: dragActive ? '#f0f8ff' : '#fff',
-                            marginTop: '20px'
+                            marginTop: '20px',
+                            position: 'relative',
+                            cursor: 'pointer'
                         }}
                     >
-                        <p>Drag &amp; drop a file here to upload</p>
+                        <p>Drag &amp; drop a file here to upload or click to select files</p>
                         {uploadStatus && <p>{uploadStatus}</p>}
+                        {isUploading && (
+                            <div className="spinner-overlay">
+                                <div className="spinner"></div>
+                            </div>
+                        )}
+                        <input
+                            type="file"
+                            multiple
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            onChange={handleFileSelect}
+                        />
                     </div>
                 </>
             )}
