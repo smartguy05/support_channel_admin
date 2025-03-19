@@ -1,4 +1,49 @@
-# Getting Started with Support Channel Admin
+# Support Channel Admin
+Support Channel Admin is used to administer your Support Channels and Support Channel Knowledge Bases
+
+## Getting Started
+
+- Running instances of [Support Channel KB](https://github.com/smartguy05/support_channel_kb) and [Support Channel API](https://github.com/smartguy05/support_channel_api)
+- create .env file in root
+```
+PORT=3005
+REACT_APP_SUPPORT_CHANNEL_API_URL=http://support_channel_api_ip:support_channel_api_port
+REACT_APP_SUPPORT_CHANNEL_KB_URL=http://support_channel_kb_ip:support_channel_kb_port
+```
+- start app `npm start`
+
+
+## Screenshots
+### Channels
+**Channels** are where you can ask questions that are answered by the data you uploaded into your collection(s)
+
+Channel Settings
+![channel-main-page.png](docs/channel-main-page.png)
+
+Add Channel
+![add-channel.png](docs/add-channel.png)
+
+Edit Channel
+![edit-channel.png](docs/edit-channel.png)
+
+Test your support channel
+![test-channel.png](docs/test-channel.png)
+
+### Collections
+**Collections** are groups of documents (future plan to add images) that are available to be used as context for your Support Channels 
+
+Collection Settings
+![collections-main-page.png](docs/collections-main-page.png)
+
+Collections Details
+
+The details are shown for the selected collection. The API key is used by the Support Channel to secure the connection.
+The list of documents is displayed below the api key in a scrolling list. If you click "delete" the file along with any
+embeddings will be deleted from the database and will no longer be available for context. Below that is the fil upload 
+area. Clicking in this area will open a multiple file upload dialog with a limit of 20 files or you can drag and drop
+file(s) into the area outlined by dashes. A success or error message will be displayed after upload has completed.
+
+![collections-details.png](docs/collections-details.png)
 
 ## Available Scripts
 
