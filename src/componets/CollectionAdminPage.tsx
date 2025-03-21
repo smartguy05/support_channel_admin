@@ -1,9 +1,10 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { showErrorToast, showSuccessToast } from "../helpers/ToastHelpers";
 import './CollectionAdminPage.css';
+import {SupportCollection} from "../models/support-collection.model";
 
 function CollectionAdminPage() {
-    const [collections, setCollections] = useState<string[]>([]);
+    const [collections, setCollections] = useState<SupportCollection[]>([]);
     const [collection, setCollection] = useState('');
     const [documents, setDocuments] = useState<string[]>([]);
     const [dragActive, setDragActive] = useState(false);
@@ -36,7 +37,7 @@ function CollectionAdminPage() {
                 }
                 return res.json();
             })
-            .then((data: string[]) => {
+            .then((data: SupportCollection[]) => {
                 setCollections(data);
             })
             .catch((err) => {
@@ -342,8 +343,8 @@ function CollectionAdminPage() {
                     >
                         <option value="">-- Select Collection --</option>
                         {collections.map((col) => (
-                            <option key={col} value={col}>
-                                {col}
+                            <option key={col.name} value={col.name}>
+                                {col.name}
                             </option>
                         ))}
                     </select>
